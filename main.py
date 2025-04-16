@@ -54,13 +54,13 @@ def main():
     
     # Create solver based on algorithm choice
     if args.algorithm == 'lrta':
-        solver = LRTAStar(max_iterations=10000)
+        solver = LRTAStar(max_iterations=500000)
     else:  # simulated-annealing
         solver = SimulatedAnnealing(
             initial_temp=100.0,
             cooling_rate=0.995,
             min_temp=0.01,
-            max_iterations=10000
+            max_iterations=100000
         )
     
     # Solve the puzzle

@@ -5,8 +5,8 @@ import random
 import math
 
 class SimulatedAnnealing(Solver):
-    def __init__(self, initial_temp=100.0, cooling_rate=0.995, min_temp=0.01, max_iterations=10000,
-                 restart_temp=50.0, plateau_limit=100):
+    def __init__(self, initial_temp=500.0, cooling_rate=0.9995, min_temp=0.1, max_iterations=200000,
+                 restart_temp=250.0, plateau_limit=50):
         self.initial_temp = initial_temp
         self.cooling_rate = cooling_rate
         self.min_temp = min_temp
@@ -84,14 +84,54 @@ class SimulatedAnnealing(Solver):
             
             # Handle plateau or local minimum
             if plateau_count >= self.plateau_limit:
-                if temperature < self.restart_temp:
-                    # Restart from best known state with higher temperature
+                # Adaptive restart strategy with more exploration
+                progress = (sokoban_heuristic(initial_state) - best_cost) / sokoban_heuristic(initial_state)
+                current_complexity = len(current_state.boxes) * len(current_state.obstacles)
+                
+                # Adjust strategy based on progress and complexity
+                if progress > 0.3:  # Even modest progress is good
                     current_state = best_state
                     current_path = best_path.copy()
-                    temperature = self.restart_temp
-                    visited_states.clear()
-                    plateau_count = 0
-                    continue
+                    # Very high temperature for exploration
+                    temperature = self.initial_temp * 0.8
+                    
+                    # Aggressive random walk
+                    for _ in range(random.randint(5, 15)):
+                        moves = current_state.filter_possible_moves()
+                        if moves:
+                            # Prefer box moves when exploring
+                            box_moves = [m for m in moves if m >= 4]
+                            if box_moves and random.random() < 0.7:
+                                move = random.choice(box_moves)
+                            else:
+                                move = random.choice(moves)
+                            current_state.apply_move(move)
+                            current_path.append(move)
+                else:  # Poor progress, try extreme measures
+                    if random.random() < 0.6:  # 60% chance for fresh start
+                        current_state = initial_state
+                        current_path = []
+                        temperature = self.initial_temp
+                    else:  # 40% chance for very long random walk
+                        current_state = best_state
+                        current_path = best_path.copy()
+                        # Much more random moves when stuck
+                        for _ in range(random.randint(20, 30)):
+                            moves = current_state.filter_possible_moves()
+                            if moves:
+                                # Prefer box moves when exploring
+                                box_moves = [m for m in moves if m >= 4]
+                                if box_moves and random.random() < 0.7:
+                                    move = random.choice(box_moves)
+                                else:
+                                    move = random.choice(moves)
+                                current_state.apply_move(move)
+                                current_path.append(move)
+                        temperature = self.initial_temp
+                
+                visited_states.clear()
+                plateau_count = 0
+                continue
             
             # Decide whether to accept the new state
             if self.acceptance_probability(last_cost, next_cost, temperature) > random.random():

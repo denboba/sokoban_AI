@@ -51,7 +51,11 @@ class LRTAStar(Solver):
             
             for move in possible_moves:
                 next_state = current_state.copy()
-                next_state.apply_move(move)
+                try:
+                    next_state.apply_move(move)
+                except ValueError:
+                    # Move turned out to be invalid on copied state
+                    continue
                 next_key = self.get_state_key(next_state)
                 
                 # Skip if we've seen this state too many times

@@ -87,16 +87,16 @@ def sokoban_heuristic(state) -> float:
     box_positions = [(box.x, box.y) for box in state.boxes.values()]
     
     # Calculate minimum matching distance between boxes and targets
-    distance_cost = min_matching_distance(box_positions, state.targets)
+    distance_cost = min_matching_distance(box_positions, state.targets) * 2.0
     
     # Calculate player-to-box distance
     player_cost = box_to_player_distance(state)
     
     # Calculate deadlock penalty
-    deadlock_cost = deadlock_heuristic(state)
+    deadlock_cost = deadlock_heuristic(state) * 3.0
     
     # Add penalties for box moves and pull moves
-    box_move_penalty = len([m for m in state.filter_possible_moves() if m >= BOX_LEFT]) * 2
-    pull_penalty = state.undo_moves * 5
+    box_move_penalty = len([m for m in state.filter_possible_moves() if m >= BOX_LEFT]) * 2.0
+    pull_penalty = state.undo_moves * 3.0
     
     return distance_cost + player_cost + deadlock_cost + box_move_penalty + pull_penalty
