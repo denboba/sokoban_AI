@@ -1,102 +1,208 @@
-from math import sqrt
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Set
+from scipy.optimize import linear_sum_assignment
+import numpy as np
 from sokoban.moves import *
+
 
 def manhattan_distance(pos1: Tuple[int, int], pos2: Tuple[int, int]) -> int:
     """Calculate Manhattan distance between two points"""
     return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
 
-def min_matching_distance(boxes: List[Tuple[int, int]], targets: List[Tuple[int, int]]) -> float:
-    """Calculate minimum sum of distances between boxes and targets using greedy matching"""
-    total_distance = 0
-    unmatched_targets = targets.copy()
-    
-    for box in boxes:
-        if not unmatched_targets:
-            break
-            
-        # Find closest target for this box
-        min_dist = float('inf')
-        best_target = None
-        best_target_idx = None
+
+def path_exists(start: Tuple[int, int], end: Tuple[int, int], obstacles: Set[Tuple[int, int]], max_depth: int = 20) -> bool:
+    """Check if there exists a path between start and end points avoiding obstacles"""
+    if start == end:
+        return True
         
-        for i, target in enumerate(unmatched_targets):
-            dist = manhattan_distance(box, target)
-            if dist < min_dist:
-                min_dist = dist
-                best_target = target
-                best_target_idx = i
-                
-        if best_target is not None:
-            total_distance += min_dist
-            unmatched_targets.pop(best_target_idx)
-            
-    return total_distance
+    queue = [(start, 0)]
+    visited = {start}
+    
+    while queue and queue[0][1] < max_depth:
+        pos, depth = queue.pop(0)
+        x, y = pos
+        
+        for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
+            next_pos = (x + dx, y + dy)
+            if next_pos == end:
+                return True
+            if next_pos not in obstacles and next_pos not in visited:
+                queue.append((next_pos, depth + 1))
+                visited.add(next_pos)
+    
+    return False
+
+
+def min_matching_distance(boxes: List[Tuple[int, int]],
+                          targets: List[Tuple[int, int]]) -> float:
+    """
+    Optimized minimum matching distance using Hungarian algorithm.
+    O(n³) time but provides optimal matching.
+    """
+    if not boxes or not targets:
+        return 0.0
+
+    # Create cost matrix
+    cost_matrix = [[manhattan_distance(box, target) for target in targets]
+                   for box in boxes]
+
+    # Get optimal assignment
+    row_ind, col_ind = linear_sum_assignment(cost_matrix)
+
+    return sum(cost_matrix[i][j] for i, j in zip(row_ind, col_ind))
+
 
 def box_to_player_distance(state) -> float:
-    """Calculate minimum distance from player to any box"""
+    """
+    Optimized player-to-box distance calculation.
+    Uses direct dictionary access instead of values() iteration.
+    """
     player_pos = (state.player.x, state.player.y)
     min_dist = float('inf')
-    
-    for box in state.boxes.values():
-        dist = manhattan_distance(player_pos, (box.x, box.y))
-        min_dist = min(min_dist, dist)
-    
+
+    # Directly iterate through positions to avoid Box object lookups
+    for (box_x, box_y) in state.positions_of_boxes:
+        dist = abs(player_pos[0] - box_x) + abs(player_pos[1] - box_y)
+        if dist < min_dist:
+            min_dist = dist
+            if min_dist == 0:  # Early exit if we find adjacent box
+                break
+
     return min_dist
 
+
 def deadlock_heuristic(state) -> float:
-    """Penalize states that might lead to deadlocks"""
+    """
+    Optimized deadlock detection with:
+    - Early termination checks
+    - Cached position lookups
+    - More efficient neighbor checking
+    """
     penalty = 0
-    
-    # Get box positions
-    box_positions = [(box.x, box.y) for box in state.boxes.values()]
-    
-    for box_x, box_y in box_positions:
-        # Skip if box is already on target
-        if (box_x, box_y) in state.targets:
+    obstacles = state.obstacles
+    box_positions = state.positions_of_boxes
+    targets = state.targets
+
+    # Convert to sets for faster membership testing
+    obstacle_set = set(obstacles) if not isinstance(obstacles, set) else obstacles
+    target_set = set(targets) if not isinstance(targets, set) else targets
+    box_set = set(box_positions)
+
+    for (box_x, box_y) in box_positions:
+        # Skip if box is on target
+        if (box_x, box_y) in target_set:
             continue
-            
-        # Check for corner deadlock
-        horizontal_blocked = False
-        vertical_blocked = False
-        
-        # Check horizontal walls/obstacles/boxes
-        left_blocked = (box_x, box_y-1) in state.obstacles or (box_x, box_y-1) in state.positions_of_boxes
-        right_blocked = (box_x, box_y+1) in state.obstacles or (box_x, box_y+1) in state.positions_of_boxes
-        if left_blocked and right_blocked:
-            horizontal_blocked = True
-            
-        # Check vertical walls/obstacles/boxes
-        down_blocked = (box_x-1, box_y) in state.obstacles or (box_x-1, box_y) in state.positions_of_boxes
-        up_blocked = (box_x+1, box_y) in state.obstacles or (box_x+1, box_y) in state.positions_of_boxes
-        if up_blocked and down_blocked:
-            vertical_blocked = True
-            
-        # Corner deadlock
-        if horizontal_blocked and vertical_blocked:
-            penalty += 1000
-        # Partial blocking penalty
+
+        # Check for immediate neighbors
+        left = (box_x, box_y - 1)
+        right = (box_x, box_y + 1)
+        up = (box_x + 1, box_y)
+        down = (box_x - 1, box_y)
+
+        # Check for extended neighbors (2 steps away)
+        left2 = (box_x, box_y - 2)
+        right2 = (box_x, box_y + 2)
+        up2 = (box_x + 2, box_y)
+        down2 = (box_x - 2, box_y)
+
+        # Check for diagonal neighbors
+        up_left = (box_x + 1, box_y - 1)
+        up_right = (box_x + 1, box_y + 1)
+        down_left = (box_x - 1, box_y - 1)
+        down_right = (box_x - 1, box_y + 1)
+
+        # Basic blockage checks
+        horizontal_blocked = ((left in obstacle_set or left in box_set) and
+                            (right in obstacle_set or right in box_set))
+        vertical_blocked = ((up in obstacle_set or up in box_set) and
+                          (down in obstacle_set or down in box_set))
+
+        # Extended path checks
+        horizontal_path = not (left in obstacle_set and left2 in obstacle_set) and \
+                         not (right in obstacle_set and right2 in obstacle_set)
+        vertical_path = not (up in obstacle_set and up2 in obstacle_set) and \
+                       not (down in obstacle_set and down2 in obstacle_set)
+
+        # Diagonal escape routes
+        diagonal_escape = not all(pos in obstacle_set or pos in box_set 
+                                for pos in [up_left, up_right, down_left, down_right])
+
+        # Calculate penalty
+        if horizontal_blocked and vertical_blocked and not diagonal_escape:
+            if not (horizontal_path or vertical_path):
+                penalty += 1000  # Complete deadlock
+            else:
+                penalty += 500   # Potential escape route exists
         elif horizontal_blocked or vertical_blocked:
-            penalty += 100
-                
+            if not diagonal_escape:
+                penalty += 100    # Partial blockage without diagonal escape
+            else:
+                penalty += 50     # Partial blockage with diagonal escape
+
     return penalty
 
+
 def sokoban_heuristic(state) -> float:
-    """Combined heuristic for Sokoban"""
-    # Get current box positions
-    box_positions = [(box.x, box.y) for box in state.boxes.values()]
+    """
+    Enhanced heuristic with improved path analysis and dynamic weighting
+    """
+    # Get current state information
+    box_positions = list(state.positions_of_boxes.keys())
+    targets = state.targets
+    obstacles = set(state.obstacles)
+    player_pos = (state.player.x, state.player.y)
     
-    # Calculate minimum matching distance between boxes and targets
-    distance_cost = min_matching_distance(box_positions, state.targets) * 2.0
+    # Calculate optimal box-target assignments
+    cost_matrix = np.zeros((len(box_positions), len(targets)))
+    path_penalties = np.zeros((len(box_positions), len(targets)))
     
-    # Calculate player-to-box distance
-    player_cost = box_to_player_distance(state)
+    for i, box_pos in enumerate(box_positions):
+        for j, target in enumerate(targets):
+            base_dist = manhattan_distance(box_pos, target)
+            cost_matrix[i, j] = base_dist
+            
+            # Check path viability
+            other_boxes = set(p for p in box_positions if p != box_pos)
+            blocked_cells = obstacles | other_boxes
+            
+            # Direct path check
+            if not path_exists(box_pos, target, blocked_cells):
+                path_penalties[i, j] += base_dist
+            
+            # Check push accessibility
+            push_points = [
+                (target[0] + dx, target[1] + dy)
+                for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]
+                if (target[0] + dx, target[1] + dy) not in blocked_cells
+            ]
+            if not any(path_exists(box_pos, pp, blocked_cells) for pp in push_points):
+                path_penalties[i, j] += base_dist * 0.5
     
-    # Calculate deadlock penalty
-    deadlock_cost = deadlock_heuristic(state) * 3.0
+    # Apply penalties to cost matrix
+    cost_matrix += path_penalties
     
-    # Add penalties for box moves and pull moves
-    box_move_penalty = len([m for m in state.filter_possible_moves() if m >= BOX_LEFT]) * 2.0
-    pull_penalty = state.undo_moves * 3.0
+    # Get optimal assignment
+    row_ind, col_ind = linear_sum_assignment(cost_matrix)
+    total_distance = cost_matrix[row_ind, col_ind].sum() * 1.2
     
-    return distance_cost + player_cost + deadlock_cost + box_move_penalty + pull_penalty
+    # Player positioning cost
+    boxes_not_on_target = [box for box in box_positions if box not in targets]
+    if boxes_not_on_target:
+        nearest_box_dist = min(manhattan_distance(player_pos, box) for box in boxes_not_on_target)
+        total_distance += nearest_box_dist * 0.6
+    
+    # Deadlock analysis with progress-based scaling
+    boxes_on_target = sum(1 for box in box_positions if box in targets)
+    progress = boxes_on_target / len(targets)
+    deadlock_penalty = deadlock_heuristic(state)
+    
+    if deadlock_penalty > 0:
+        # Scale penalty based on progress and remaining boxes
+        scale = (1 - progress) * 0.8
+        total_distance += deadlock_penalty * scale
+    
+    # Movement efficiency
+    possible_moves = state.filter_possible_moves()
+    box_moves = sum(1 for m in possible_moves if m >= BOX_LEFT)
+    total_distance += box_moves * 0.3  # Small penalty for complex box movements
+    
+    return total_distance

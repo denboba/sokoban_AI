@@ -1,0 +1,19 @@
+map,algorithm,solved,moves,pull_moves,time,states_explored
+easy_map1.yaml,LRTA*,True,7,0,0.029060840606689453,0
+easy_map2.yaml,LRTA*,True,13,1,0.00563502311706543,0
+medium_map1.yaml,LRTA*,True,72,19,0.050791025161743164,0
+medium_map2.yaml,LRTA*,True,79,24,0.17873811721801758,0
+hard_map1.yaml,LRTA*,True,74,22,1.3422040939331055,0
+hard_map2.yaml,LRTA*,True,28,5,0.13547301292419434,0
+large_map1.yaml,LRTA*,True,58,11,0.4327249526977539,0
+large_map2.yaml,LRTA*,True,207,43,1.0558552742004395,0
+super_hard_map1.yaml,LRTA*,True,56,18,1.0269980430603027,0
+easy_map1.yaml,Simulated Annealing,False,0,0,0.00021195411682128906,0
+easy_map2.yaml,Simulated Annealing,False,0,0,0.00020003318786621094,0
+medium_map1.yaml,Simulated Annealing,False,0,0,0.00025081634521484375,0
+medium_map2.yaml,Simulated Annealing,False,0,0,0.0016911029815673828,0
+hard_map1.yaml,Simulated Annealing,False,0,0,5.575149059295654,0
+hard_map2.yaml,Simulated Annealing,False,0,0,0.0005970001220703125,0
+large_map1.yaml,Simulated Annealing,False,0,0,0.0010979175567626953,0
+large_map2.yaml,Simulated Annealing,False,0,0,0.0018129348754882812,0
+super_hard_map1.yaml,Simulated Annealing,False,0,0,0.008704185485839844,0
