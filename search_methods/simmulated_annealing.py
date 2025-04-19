@@ -19,10 +19,33 @@ class SimulatedAnnealing(Solver):
         self.cooling_rate = cooling_rate
         self.min_temp = min_temp
         self.max_iterations = max_iterations
-        self.restart_temp = restart_temp  # Temperature to restart from when stuck
-        self.plateau_limit = plateau_limit  # Number of iterations before considering stuck
-        self.max_visits = 3  # Fixed value for state visit limit
-        self.learning_rate = 0.2  # Fixed value for learning rate
+        self.restart_temp = restart_temp
+        self.plateau_limit = plateau_limit
+        self.heuristic_cache = {}
+
+    def quick_heuristic(self, state) -> float:
+        """Faster heuristic that only considers Manhattan distance and target coverage"""
+        cache_key = self.get_state_key(state)
+        if cache_key in self.heuristic_cache:
+            return self.heuristic_cache[cache_key]
+
+        total_dist = 0
+        boxes_on_target = 0
+        for box in state.positions_of_boxes:
+            min_dist = float('inf')
+            is_on_target = False
+            for target in state.targets:
+                dist = abs(box[0] - target[0]) + abs(box[1] - target[1])
+                min_dist = min(min_dist, dist)
+                if box == target:
+                    is_on_target = True
+                    boxes_on_target += 1
+            total_dist += min_dist
+
+        # Heavy penalty for boxes not on targets
+        score = total_dist + (len(state.boxes) - boxes_on_target) * 50
+        self.heuristic_cache[cache_key] = score
+        return score
 
     def acceptance_probability(self, old_cost: float, new_cost: float, temperature: float) -> float:
         """Calculate probability of accepting a worse solution"""
@@ -42,71 +65,80 @@ class SimulatedAnnealing(Solver):
         best_state = current_state
         best_path = []
         best_score = sokoban_heuristic(current_state)
-        best_boxes = sum(1 for box in current_state.positions_of_boxes 
-                        if box in current_state.targets)
         temperature = self.initial_temp
         iterations = 0
         last_improvement = 0
-        visited = set()  # Using set for faster lookups
-        visited_states: Set[str] = set()
+        visited_states = {}
 
         while iterations < self.max_iterations:
             iterations += 1
 
             # Get possible moves from current state
             possible_moves = current_state.filter_possible_moves()
-            valid_moves = []
+            if not possible_moves:
+                if best_path:
+                    current_state = best_state
+                    current_path = best_path[:]
+                    continue
+                return None
 
-            # Filter moves that don't lead to previously visited states
+            # Quick evaluation of moves
+            move_scores = []
             for move in possible_moves:
                 next_state = current_state.copy()
                 next_state.apply_move(move)
                 state_key = self.get_state_key(next_state)
+                
+                # Skip if we've seen this state too many times
+                visits = visited_states.get(state_key, 0)
+                if visits > 2:
+                    continue
 
-                if state_key not in visited_states:
-                    valid_moves.append((move, next_state, state_key))
+                # Prefer box moves and states we haven't seen
+                is_box_move = move >= 4
+                score = -10 if is_box_move else 0
+                score += visits * 5  # Penalty for revisiting states
+                move_scores.append((move, next_state, state_key, score))
 
-            # If no valid moves, clear visited states and try again
-            if not valid_moves:
+            if not move_scores:
                 visited_states.clear()
                 continue
 
-            # Select and apply a move
-            move, next_state, state_key = random.choice(valid_moves)
-            next_path = current_path + [move]
-            next_cost = sokoban_heuristic(next_state)
+            # Select move based on temperature
+            if random.random() < temperature / self.initial_temp:
+                # High temperature: More random selection
+                move, next_state, state_key, _ = random.choice(move_scores)
+            else:
+                # Low temperature: Prefer promising moves
+                move_scores.sort(key=lambda x: x[3])
+                move, next_state, state_key, _ = move_scores[0]
 
             # Check if solved
             if next_state.is_solved():
-                return next_path
+                return current_path + [move]
+
+            # Evaluate new state
+            next_cost = sokoban_heuristic(next_state)
 
             # Update best solution
             if next_cost < best_score:
                 best_state = next_state
-                best_path = next_path.copy()
+                best_path = current_path + [move]
                 best_score = next_cost
-                best_boxes = sum(1 for box in next_state.positions_of_boxes 
-                                if box in next_state.targets)
                 last_improvement = iterations
 
             # Check for plateau
             if iterations - last_improvement > self.plateau_limit:
-                # Adaptive restart strategy with more exploration
-                progress = (sokoban_heuristic(initial_state) - best_score) / sokoban_heuristic(initial_state)
-                current_complexity = len(current_state.boxes) * len(current_state.obstacles)
-
-                # Adjust strategy based on progress and complexity
-                if progress > 0.3:  # Even modest progress is good
+                if random.random() < 0.5:
+                    # Try continuing from best state with high temperature
                     current_state = best_state
-                    current_path = best_path.copy()
-                    # Very high temperature for exploration
-                    temperature = self.initial_temp * 0.8
-
+                    current_path = best_path[:]
+                    temperature = self.restart_temp
+                else:
                     # Aggressive random walk
-                    for _ in range(random.randint(5, 15)):
+                    for _ in range(random.randint(10, 20)):
                         moves = current_state.filter_possible_moves()
                         if moves:
-                            # Prefer box moves when exploring
                             box_moves = [m for m in moves if m >= 4]
                             if box_moves and random.random() < 0.7:
                                 move = random.choice(box_moves)
@@ -114,63 +146,22 @@ class SimulatedAnnealing(Solver):
                                 move = random.choice(moves)
                             current_state.apply_move(move)
                             current_path.append(move)
-                else:  # Poor progress, try extreme measures
-                    if random.random() < 0.6:  # 60% chance for fresh start
-                        current_state = initial_state
-                        current_path = []
-                        temperature = self.initial_temp
-                    else:  # 40% chance for very long random walk
-                        current_state = best_state
-                        current_path = best_path.copy()
-                        # Much more random moves when stuck
-                        for _ in range(random.randint(20, 30)):
-                            moves = current_state.filter_possible_moves()
-                            if moves:
-                                # Prefer box moves when exploring
-                                box_moves = [m for m in moves if m >= 4]
-                                if box_moves and random.random() < 0.7:
-                                    move = random.choice(box_moves)
-                                else:
-                                    move = random.choice(moves)
-                                current_state.apply_move(move)
-                                current_path.append(move)
-                        temperature = self.initial_temp
+                    temperature = self.initial_temp
 
                 visited_states.clear()
                 last_improvement = iterations
                 continue
 
-            # Get current metrics
-            current_score = sokoban_heuristic(current_state)
-            current_boxes = sum(1 for box in current_state.positions_of_boxes 
-                              if box in current_state.targets)
-            current_key = self.get_state_key(current_state)
-
-            # Check visit limit
-            if current_key in visited:
-                if best_path:
-                    current_state = best_state
-                    current_path = best_path.copy()
-                    visited.clear()
-                    temperature = self.initial_temp
-                    continue
-                return None
-
-            # Decide whether to accept the new state
-            if self.acceptance_probability(best_score, current_score, temperature) > random.random():
+            # Apply acceptance probability
+            if random.random() < self.acceptance_probability(best_score, next_cost, temperature):
                 current_state = next_state
-                current_path = next_path
-                best_score = current_score
-                visited.add(current_key)
+                current_path.append(move)
+                visited_states[state_key] = visited_states.get(state_key, 0) + 1
 
-            # Simple memory management
-            if len(visited) > 5000:
-                visited.clear()
-
-            # Cool down
+            # Cool down temperature
             temperature *= self.cooling_rate
             if temperature < self.min_temp:
-                temperature = self.initial_temp
-                visited_states.clear()
+                temperature = self.restart_temp
 
-        return None  # No solution found within iteration limit
+        # Return best solution found if no solution was reached
+        return best_path if best_path else None
