@@ -1,6 +1,7 @@
 from typing import List, Optional, Set
 from .solver import Solver
 from .heuristics import sokoban_heuristic
+from sokoban.moves import LEFT, RIGHT, UP, DOWN, BOX_LEFT, BOX_RIGHT, BOX_UP, BOX_DOWN
 import random
 import math
 
@@ -8,9 +9,9 @@ import math
 class SimulatedAnnealing(Solver):
     def __init__(self,
                  initial_temp: float = 100.0,
-                 cooling_rate: float = 0.9999,
-                 min_temp: float = 0.01,
-                 max_iterations: int = 600000,
+                 cooling_rate: float = 0.99,
+                 min_temp: float = 0.1,
+                 max_iterations: int = 100000,
                  restart_temp: float = 50.0,
                  plateau_limit: int = 100,
                  exploration_factor: float = 0.4):
@@ -35,17 +36,18 @@ class SimulatedAnnealing(Solver):
         return f"p{state.player.x},{state.player.y}|b{box_positions}"
 
     def solve(self, initial_state) -> Optional[List[int]]:
-        """Solve Sokoban puzzle using Simulated Annealing with improvements"""
+        """Optimized Simulated Annealing solver"""
         current_state = initial_state
         current_path = []
         best_state = current_state
-        best_path = current_path.copy()
-        best_cost = sokoban_heuristic(current_state)
-
+        best_path = []
+        best_score = sokoban_heuristic(current_state)
+        best_boxes = sum(1 for box in current_state.positions_of_boxes 
+                        if box in current_state.targets)
         temperature = self.initial_temp
         iterations = 0
-        plateau_count = 0
-        last_cost = float('inf')
+        last_improvement = 0
+        visited = set()  # Using set for faster lookups
         visited_states: Set[str] = set()
 
         while iterations < self.max_iterations:
@@ -79,22 +81,18 @@ class SimulatedAnnealing(Solver):
                 return next_path
 
             # Update best solution
-            if next_cost < best_cost:
+            if next_cost < best_score:
                 best_state = next_state
                 best_path = next_path.copy()
-                best_cost = next_cost
-                plateau_count = 0
+                best_score = next_cost
+                best_boxes = sum(1 for box in next_state.positions_of_boxes 
+                                if box in next_state.targets)
+                last_improvement = iterations
 
             # Check for plateau
-            if abs(next_cost - last_cost) < 0.01:
-                plateau_count += 1
-            else:
-                plateau_count = 0
-
-            # Handle plateau or local minimum
-            if plateau_count >= self.plateau_limit:
+            if iterations - last_improvement > self.plateau_limit:
                 # Adaptive restart strategy with more exploration
-                progress = (sokoban_heuristic(initial_state) - best_cost) / sokoban_heuristic(initial_state)
+                progress = (sokoban_heuristic(initial_state) - best_score) / sokoban_heuristic(initial_state)
                 current_complexity = len(current_state.boxes) * len(current_state.obstacles)
 
                 # Adjust strategy based on progress and complexity
@@ -139,15 +137,35 @@ class SimulatedAnnealing(Solver):
                         temperature = self.initial_temp
 
                 visited_states.clear()
-                plateau_count = 0
+                last_improvement = iterations
                 continue
 
+            # Get current metrics
+            current_score = sokoban_heuristic(current_state)
+            current_boxes = sum(1 for box in current_state.positions_of_boxes 
+                              if box in current_state.targets)
+            current_key = self.get_state_key(current_state)
+
+            # Check visit limit
+            if current_key in visited:
+                if best_path:
+                    current_state = best_state
+                    current_path = best_path.copy()
+                    visited.clear()
+                    temperature = self.initial_temp
+                    continue
+                return None
+
             # Decide whether to accept the new state
-            if self.acceptance_probability(last_cost, next_cost, temperature) > random.random():
+            if self.acceptance_probability(best_score, current_score, temperature) > random.random():
                 current_state = next_state
                 current_path = next_path
-                last_cost = next_cost
-                visited_states.add(state_key)
+                best_score = current_score
+                visited.add(current_key)
+
+            # Simple memory management
+            if len(visited) > 5000:
+                visited.clear()
 
             # Cool down
             temperature *= self.cooling_rate
