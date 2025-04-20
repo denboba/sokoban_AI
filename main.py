@@ -1,7 +1,6 @@
 import os
 import time
-import pandas as pd
-from typing import List, Dict
+from typing import  Dict
 from sokoban.map import Map
 from search_methods.lrta_star import LRTAStar
 from search_methods.simmulated_annealing import SimulatedAnnealing
@@ -90,11 +89,10 @@ def main():
     sa_solver = SimulatedAnnealing(
         initial_temp=100.0,
         cooling_rate=0.9999,
-        min_temp=0.01,
-        max_iterations=600000,
+        min_temp=0.05,
+        max_iterations=200000,
         restart_temp=50.0,
         plateau_limit=100,
-        exploration_factor=0.4
     )
     algorithm_name = 'Simulated Annealing'
 

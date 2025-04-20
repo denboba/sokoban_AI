@@ -1,0 +1,73 @@
+\documentclass[11pt]{article.cls}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{float}
+
+\title{Artificial Intelligence: Assignment 1 – Sokoban}
+\author{Student Name}
+\date{April 20, 2025}
+
+\begin{document}
+\maketitle
+
+\section{Implementation and Optimizations}
+
+\subsection{LRTA* (Learning Real-Time A*)}
+We implemented LRTA* with the following Sokoban-specific optimizations:
+\begin{itemize}
+    \item State visit limitation to prevent cycling
+    \item Heuristic value caching
+    \item Differentiated costs for push vs. pull moves
+    \item Backtracking mechanisms for deadlock situations
+    \item Periodic clearing of visited states for memory management
+\end{itemize}
+
+\subsection{Simulated Annealing}
+For Simulated Annealing, we implemented the following optimizations:
+\begin{itemize}
+    \item Adaptive cooling schedule based on solution progress
+    \item Informed neighbor generation using heuristics
+    \item Best-state memory retention
+    \item Periodic reheating to escape local minima
+\end{itemize}
+
+\section{Implemented Heuristics}
+
+\subsection{Basic Heuristic}
+\begin{itemize}
+    \item Manhattan distance between boxes and their nearest targets
+    \item Penalty for boxes blocked against walls
+\end{itemize}
+
+\subsection{Advanced Heuristic}
+\begin{itemize}
+    \item Pattern database for common box configurations
+    \item Deadlock analysis for invalid state avoidance
+    \item Target accessibility evaluation
+\end{itemize}
+
+\section{Comparative Analysis}
+
+\subsection{Execution Time}
+LRTA* is faster on simple maps (easy_map1, easy_map2), while Simulated Annealing performs better on complex maps due to its stochastic nature.
+
+\subsection{Number of Explored States}
+LRTA* systematically explores the state space, while Simulated Annealing makes guided random jumps, resulting in less exhaustive but potentially more efficient exploration in large search spaces.
+
+\subsection{Solution Quality}
+\begin{itemize}
+    \item LRTA*: Finds optimal or near-optimal solutions but may fail on complex maps
+    \item Simulated Annealing: Sub-optimal but consistent solutions, with better adaptability to complex maps
+\end{itemize}
+
+\section{Conclusions}
+Both algorithms present distinct advantages and disadvantages:
+\begin{itemize}
+    \item LRTA* is preferable for simple maps where finding the optimal solution is a priority
+    \item Simulated Annealing is more suitable for complex maps where finding an acceptable solution is more important than optimality
+\end{itemize}
+
+\end{document}

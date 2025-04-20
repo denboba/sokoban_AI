@@ -1,0 +1,48 @@
+Artificial Intelligence: Assignment 1 – Sokoban
+Student Name
+April 20, 2025
+
+1. Implementation and Optimizations
+
+1.1 LRTA* (Learning Real-Time A*)
+We implemented LRTA* with the following Sokoban-specific optimizations:
+- State visit limitation to prevent cycling
+- Heuristic value caching
+- Differentiated costs for push vs. pull moves
+- Backtracking mechanisms for deadlock situations
+- Periodic clearing of visited states for memory management
+
+1.2 Simulated Annealing
+For Simulated Annealing, we implemented the following optimizations:
+- Adaptive cooling schedule based on solution progress
+- Informed neighbor generation using heuristics
+- Best-state memory retention
+- Periodic reheating to escape local minima
+
+2. Implemented Heuristics
+
+2.1 Basic Heuristic
+- Manhattan distance between boxes and their nearest targets
+- Penalty for boxes blocked against walls
+
+2.2 Advanced Heuristic
+- Pattern database for common box configurations
+- Deadlock analysis for invalid state avoidance
+- Target accessibility evaluation
+
+3. Comparative Analysis
+
+3.1 Execution Time
+LRTA* is faster on simple maps (easy_map1, easy_map2), while Simulated Annealing performs better on complex maps due to its stochastic nature.
+
+3.2 Number of Explored States
+LRTA* systematically explores the state space, while Simulated Annealing makes guided random jumps, resulting in less exhaustive but potentially more efficient exploration in large search spaces.
+
+3.3 Solution Quality
+- LRTA*: Finds optimal or near-optimal solutions but may fail on complex maps
+- Simulated Annealing: Sub-optimal but consistent solutions, with better adaptability to complex maps
+
+4. Conclusions
+Both algorithms present distinct advantages and disadvantages:
+- LRTA* is preferable for simple maps where finding the optimal solution is a priority
+- Simulated Annealing is more suitable for complex maps where finding an acceptable solution is more important than optimality
