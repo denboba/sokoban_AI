@@ -29,7 +29,9 @@ def path_exists(start: Tuple[int, int], end: Tuple[int, int], obstacles: Set[Tup
                 queue.append((next_pos, depth + 1))
                 visited.add(next_pos)
     
-    return False
+    # Debug: if no path found
+    if not queue and start != end:
+        return False
 
 
 def min_matching_distance(boxes: List[Tuple[int, int]],
@@ -85,9 +87,11 @@ def deadlock_heuristic(state) -> float:
     # Convert to sets for faster membership testing
     obstacle_set = set(obstacles) if not isinstance(obstacles, set) else obstacles
     target_set = set(targets) if not isinstance(targets, set) else targets
-    box_set = set(box_positions)
+    box_set = set(box_positions) if not isinstance(box_positions, set) else box_positions
 
     for (box_x, box_y) in box_positions:
+        # Debug: print box being checked
+       # print(f"[DEADLOCK] Checking box at {(box_x, box_y)}")
         # Skip if box is on target
         if (box_x, box_y) in target_set:
             continue
@@ -125,6 +129,15 @@ def deadlock_heuristic(state) -> float:
         # Diagonal escape routes
         diagonal_escape = not all(pos in obstacle_set or pos in box_set 
                                 for pos in [up_left, up_right, down_left, down_right])
+        #up and right and right blocked or down and right blocked or down and left blocked or up and left blocked
+        up_and_right_blocked = (up in obstacle_set or up in box_set) and (right in obstacle_set or right in box_set)
+        down_and_right_blocked = (down in obstacle_set or down in box_set) and (right in obstacle_set or right in box_set)
+        down_and_left_blocked = (down in obstacle_set or down in box_set) and (left in obstacle_set or left in box_set)
+        up_and_left_blocked = (up in obstacle_set or up in box_set) and (left in obstacle_set or left in box_set)
+
+        if up_and_right_blocked or down_and_right_blocked or down_and_left_blocked or up_and_left_blocked:
+            penalty += 200
+           # print(f"[DEADLOCK] Adjacent block detected at {(box_x, box_y)}: penalty now {penalty}")
 
         # Calculate penalty
         if horizontal_blocked and vertical_blocked and not diagonal_escape:
@@ -174,8 +187,9 @@ def sokoban_heuristic(state) -> float:
             blocked_cells = obstacles | other_boxes
             
             # Direct path check with increased max_depth for harder puzzles
-            if not path_exists(box_pos, target, blocked_cells, max_depth=30):
-                path_penalties[i, j] += base_dist * 1.5
+            # Optimized: allow deeper search and lower penalty
+            if not path_exists(box_pos, target, blocked_cells, max_depth=80):
+                path_penalties[i, j] += base_dist * 0.5
             
             # Comprehensive push accessibility check
             push_points = []
@@ -188,11 +202,11 @@ def sokoban_heuristic(state) -> float:
                         push_points.append(push_pos)
             
             if not push_points:
-                path_penalties[i, j] += base_dist * 2
+                path_penalties[i, j] += base_dist * 0.5
             
             # Corner penalty if box is not on target
             if is_corner and box_pos != target:
-                corner_penalties[i, j] = base_dist * 3
+                corner_penalties[i, j] = base_dist * 1.0
     
     # Apply all penalties to cost matrix
     cost_matrix += path_penalties + corner_penalties
@@ -215,8 +229,8 @@ def sokoban_heuristic(state) -> float:
     deadlock_penalty = deadlock_heuristic(state)
     
     if deadlock_penalty > 0:
-        # Dynamic penalty scaling based on progress and puzzle difficulty
-        base_scale = (1 - progress) * 1.2
+        # Optimized: lower deadlock penalty scale
+        base_scale = (1 - progress) * 0.2
         difficulty_scale = len(targets) / 4  # Scale up for harder puzzles
         total_distance += deadlock_penalty * base_scale * difficulty_scale
     
@@ -233,4 +247,5 @@ def sokoban_heuristic(state) -> float:
     box_moves = sum(1 for m in possible_moves if m >= BOX_LEFT)
     total_distance += box_moves * 0.3  # Small penalty for complex box movements
     
+    #print(f"[HEURISTIC] total_distance={total_distance:.2f}, deadlock_penalty={deadlock_penalty}, progress={progress:.2f}, boxes={box_positions}, player={player_pos}")
     return total_distance

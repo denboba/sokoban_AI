@@ -76,6 +76,7 @@ class LRTAStar(Solver):
             current_key = self.get_state_key(current_state)
             current_h = self.get_heuristic(current_state)
             boxes_on_target = sum(1 for box in current_state.positions_of_boxes if box in current_state.targets)
+         #   print(f"[LRTA*] Iter {iterations} | h={current_h:.2f} | Boxes on target: {boxes_on_target} | Path length: {len(path)} | State: {current_key}")
 
             # Track best state seen so far
             boxes_on_target = sum(1 for box in current_state.positions_of_boxes if box in current_state.targets)
@@ -116,6 +117,7 @@ class LRTAStar(Solver):
 
             # Advanced backtracking with state analysis
             if plateau_count > 40 or self.visit_counts[current_key] > adaptive_visits:
+               # print(f"[LRTA*] Backtracking at iter {iterations} | Plateau: {plateau_count} | Visits: {self.visit_counts[current_key]}")
                 if not path:
                     if best_path and self.verify_solution(initial_state, best_path):
                         return best_path
@@ -166,7 +168,9 @@ class LRTAStar(Solver):
 
             # Get and evaluate possible moves
             possible_moves = current_state.filter_possible_moves()
+           # print(f"[LRTA*] Possible moves: {possible_moves}")
             if not possible_moves:
+              #  print(f"[LRTA*] No moves possible at iter {iterations} | State: {current_key}")
                 if best_path and self.verify_solution(initial_state, best_path):
                     return best_path
                 return None
@@ -181,6 +185,10 @@ class LRTAStar(Solver):
                     next_state.apply_move(move)
                 except ValueError:
                     continue
+
+                # Debug: print when a box is moved
+                # if set(next_state.positions_of_boxes) != set(current_state.positions_of_boxes):
+                #     print(f"[LRTA*] Box moved: {set(current_state.positions_of_boxes)} -> {set(next_state.positions_of_boxes)}")
 
                 next_key = self.get_state_key(next_state)
                 if next_key in visited_states:
