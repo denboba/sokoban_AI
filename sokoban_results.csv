@@ -1,0 +1,13 @@
+map,solver,time,states,moves,pulls,solved
+easy_map1,LRTAStar,0.05177346296841279,0,7,0,True
+easy_map2,LRTAStar,0.010494399990420789,0,17,1,True
+medium_map1,LRTAStar,0.08964554400881752,0,72,19,True
+medium_map2,LRTAStar,0.300794652022887,0,79,24,True
+hard_map1,LRTAStar,1.5113374959910288,0,74,22,True
+hard_map2,LRTAStar,0.1695617739460431,0,28,5,True
+easy_map1,SimulatedAnnealing,0.4103484489605762,0,329,95,True
+easy_map2,SimulatedAnnealing,0.20884377299807966,0,43,15,True
+medium_map1,SimulatedAnnealing,0.43838561297161505,0,654,192,True
+medium_map2,SimulatedAnnealing,3.051532409968786,0,924,316,True
+hard_map1,SimulatedAnnealing,10.124600357958116,0,530,243,True
+hard_map2,SimulatedAnnealing,3.3000039089820348,0,254,85,True

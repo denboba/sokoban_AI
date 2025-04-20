@@ -143,7 +143,7 @@ def deadlock_heuristic(state) -> float:
 
 def sokoban_heuristic(state) -> float:
     """
-    Enhanced heuristic with improved path analysis and dynamic weighting
+    Enhanced heuristic with comprehensive state analysis and dynamic weighting
     """
     # Get current state information
     box_positions = list(state.positions_of_boxes.keys())
@@ -151,54 +151,82 @@ def sokoban_heuristic(state) -> float:
     obstacles = set(state.obstacles)
     player_pos = (state.player.x, state.player.y)
     
-    # Calculate optimal box-target assignments
+    # Calculate optimal box-target assignments with enhanced path analysis
     cost_matrix = np.zeros((len(box_positions), len(targets)))
     path_penalties = np.zeros((len(box_positions), len(targets)))
+    corner_penalties = np.zeros((len(box_positions), len(targets)))
     
     for i, box_pos in enumerate(box_positions):
+        x, y = box_pos
+        
+        # Check if box is in a corner
+        adjacent_obstacles = sum(1 for dx, dy in [(0,1), (0,-1), (1,0), (-1,0)]
+                               if (x+dx, y+dy) in obstacles)
+        is_corner = adjacent_obstacles >= 2
+        
         for j, target in enumerate(targets):
+            # Base distance using Manhattan distance
             base_dist = manhattan_distance(box_pos, target)
             cost_matrix[i, j] = base_dist
             
-            # Check path viability
+            # Enhanced path analysis
             other_boxes = set(p for p in box_positions if p != box_pos)
             blocked_cells = obstacles | other_boxes
             
-            # Direct path check
-            if not path_exists(box_pos, target, blocked_cells):
-                path_penalties[i, j] += base_dist
+            # Direct path check with increased max_depth for harder puzzles
+            if not path_exists(box_pos, target, blocked_cells, max_depth=30):
+                path_penalties[i, j] += base_dist * 1.5
             
-            # Check push accessibility
-            push_points = [
-                (target[0] + dx, target[1] + dy)
-                for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]
-                if (target[0] + dx, target[1] + dy) not in blocked_cells
-            ]
-            if not any(path_exists(box_pos, pp, blocked_cells) for pp in push_points):
-                path_penalties[i, j] += base_dist * 0.5
+            # Comprehensive push accessibility check
+            push_points = []
+            for dx, dy in [(0,1), (1,0), (0,-1), (-1,0)]:
+                push_pos = (target[0] + dx, target[1] + dy)
+                if push_pos not in blocked_cells:
+                    # Check if player can reach the push position
+                    player_access = path_exists(player_pos, push_pos, blocked_cells, max_depth=30)
+                    if player_access:
+                        push_points.append(push_pos)
+            
+            if not push_points:
+                path_penalties[i, j] += base_dist * 2
+            
+            # Corner penalty if box is not on target
+            if is_corner and box_pos != target:
+                corner_penalties[i, j] = base_dist * 3
     
-    # Apply penalties to cost matrix
-    cost_matrix += path_penalties
+    # Apply all penalties to cost matrix
+    cost_matrix += path_penalties + corner_penalties
     
-    # Get optimal assignment
+    # Get optimal assignment using Hungarian algorithm
     row_ind, col_ind = linear_sum_assignment(cost_matrix)
-    total_distance = cost_matrix[row_ind, col_ind].sum() * 1.2
+    total_distance = cost_matrix[row_ind, col_ind].sum() * 1.5
     
-    # Player positioning cost
+    # Enhanced player positioning cost
     boxes_not_on_target = [box for box in box_positions if box not in targets]
     if boxes_not_on_target:
+        # Consider both nearest box and overall distribution
         nearest_box_dist = min(manhattan_distance(player_pos, box) for box in boxes_not_on_target)
-        total_distance += nearest_box_dist * 0.6
+        avg_box_dist = sum(manhattan_distance(player_pos, box) for box in boxes_not_on_target) / len(boxes_not_on_target)
+        total_distance += nearest_box_dist * 0.8 + avg_box_dist * 0.4
     
-    # Deadlock analysis with progress-based scaling
+    # Progressive deadlock analysis
     boxes_on_target = sum(1 for box in box_positions if box in targets)
     progress = boxes_on_target / len(targets)
     deadlock_penalty = deadlock_heuristic(state)
     
     if deadlock_penalty > 0:
-        # Scale penalty based on progress and remaining boxes
-        scale = (1 - progress) * 0.8
-        total_distance += deadlock_penalty * scale
+        # Dynamic penalty scaling based on progress and puzzle difficulty
+        base_scale = (1 - progress) * 1.2
+        difficulty_scale = len(targets) / 4  # Scale up for harder puzzles
+        total_distance += deadlock_penalty * base_scale * difficulty_scale
+    
+    # Additional penalty for boxes blocking each other
+    for box1 in box_positions:
+        for box2 in box_positions:
+            if box1 != box2:
+                if abs(box1[0] - box2[0]) + abs(box1[1] - box2[1]) == 1:  # Adjacent boxes
+                    if box1 not in targets or box2 not in targets:
+                        total_distance += 5  # Penalty for adjacent boxes not on targets
     
     # Movement efficiency
     possible_moves = state.filter_possible_moves()

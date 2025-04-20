@@ -1,19 +1,19 @@
 map,algorithm,solved,moves,pull_moves,time,states_explored
-easy_map1.yaml,LRTA*,True,7,0,0.0413050651550293,0
-easy_map2.yaml,LRTA*,True,13,1,0.005138874053955078,0
-medium_map1.yaml,LRTA*,True,72,19,0.042266845703125,0
-medium_map2.yaml,LRTA*,True,79,24,0.1526048183441162,0
-hard_map1.yaml,LRTA*,True,74,22,1.442763090133667,0
-hard_map2.yaml,LRTA*,True,28,5,0.14235711097717285,0
-large_map1.yaml,LRTA*,True,58,11,0.4426290988922119,0
-large_map2.yaml,LRTA*,True,207,43,0.9317460060119629,0
-super_hard_map1.yaml,LRTA*,True,56,18,1.1738789081573486,0
-easy_map1.yaml,Simulated Annealing,True,295,104,0.3819160461425781,0
-easy_map2.yaml,Simulated Annealing,True,239,63,0.17850708961486816,0
-medium_map1.yaml,Simulated Annealing,True,246,88,0.23889517784118652,0
-medium_map2.yaml,Simulated Annealing,True,532,191,0.7905430793762207,0
-hard_map1.yaml,Simulated Annealing,True,1748,712,278.1605079174042,0
-hard_map2.yaml,Simulated Annealing,True,845,274,13.743014097213745,0
-large_map1.yaml,Simulated Annealing,True,1152,342,49.90506911277771,0
-large_map2.yaml,Simulated Annealing,True,1828,530,47.13287019729614,0
-super_hard_map1.yaml,Simulated Annealing,True,621,232,10.945940971374512,0
+easy_map1.yaml,LRTA*,True,7,0,0.041023969650268555,0
+easy_map2.yaml,LRTA*,True,13,1,0.00665283203125,0
+medium_map1.yaml,LRTA*,True,72,19,0.054975271224975586,0
+medium_map2.yaml,LRTA*,True,79,24,0.1822807788848877,0
+hard_map1.yaml,LRTA*,True,74,22,1.8084988594055176,0
+hard_map2.yaml,LRTA*,True,28,5,0.21572303771972656,0
+large_map1.yaml,LRTA*,True,58,11,0.7085559368133545,0
+large_map2.yaml,LRTA*,True,207,43,1.272817850112915,0
+super_hard_map1.yaml,LRTA*,True,56,18,1.633059024810791,0
+easy_map1.yaml,Simulated Annealing,True,253,67,0.0819540023803711,0
+easy_map2.yaml,Simulated Annealing,True,395,102,0.19626903533935547,0
+medium_map1.yaml,Simulated Annealing,True,344,98,0.5824620723724365,0
+medium_map2.yaml,Simulated Annealing,True,755,267,1.0457911491394043,0
+hard_map1.yaml,Simulated Annealing,True,486,191,13.14619517326355,0
+hard_map2.yaml,Simulated Annealing,True,799,276,29.89303994178772,0
+large_map1.yaml,Simulated Annealing,True,797,241,2.510586738586426,0
+large_map2.yaml,Simulated Annealing,True,1961,557,27.351224660873413,0
+super_hard_map1.yaml,Simulated Annealing,True,1341,555,100.51699709892273,0
