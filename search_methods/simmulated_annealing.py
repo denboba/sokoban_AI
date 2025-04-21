@@ -1,6 +1,6 @@
 from typing import List, Optional
-from .solver import Solver
-from .heuristics import sokoban_heuristic  # Now we're using this heuristic
+from search_methods.solver import Solver
+from search_methods.heuristics import sokoban_heuristic
 import random
 import math
 

@@ -6,5 +6,5 @@ class Solver:
     def __init__(self, map: Map) -> None:
         self.map = map
 
-    def solve(self):
+    def solve(self, ):
         raise NotImplementedError

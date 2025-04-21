@@ -8,10 +8,9 @@ def manhattan_distance(pos1: Tuple[int, int], pos2: Tuple[int, int]) -> int:
     """Manhattan distance between two points"""
     return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
 
-
 def path_exists(start: Tuple[int, int], end: Tuple[int, int], obstacles: Set[Tuple[int, int]],
                 max_depth: int = 20) -> bool:
-    """Check if there exists a path between start and end points avoiding obstacles"""
+    """check if there exists a path between start and end points avoiding obstacles"""
     if start == end:
         return True
 
@@ -36,21 +35,14 @@ def min_matching_distance(boxes: List[Tuple[int, int]], targets: List[Tuple[int,
     """Minimum cost matching using the Hungarian algorithm for optimal box-target matching"""
     if not boxes or not targets:
         return 0.0
-
-    # Cost matrix for box-target pairs
     cost_matrix = np.array([[manhattan_distance(box, target) for target in targets] for box in boxes])
-
-    # Apply the Hungarian algorithm to find the optimal assignment
     row_ind, col_ind = linear_sum_assignment(cost_matrix)
-
     return cost_matrix[row_ind, col_ind].sum()
 
 
 def deadlock_heuristic(state) -> float:
     """
-    Deadlock detection heuristic that identifies situations where boxes can't reach targets.
-    A box is considered deadlocked if it is surrounded by obstacles or other boxes in a way
-    that prevents it from moving to its target.
+    heuristic to detect potential deadlocks in the current state.
     """
     penalty = 0
     obstacles = state.obstacles
@@ -66,8 +58,7 @@ def deadlock_heuristic(state) -> float:
         # Skip if the box is on target it is not a deadlock
         if (box_x, box_y) in target_set:
             continue
-
-        # Check for immediate neighbors
+        # check for immediate neighbors
         left = (box_x, box_y - 1)
         right = (box_x, box_y + 1)
         up = (box_x + 1, box_y)
@@ -118,7 +109,7 @@ def deadlock_heuristic(state) -> float:
 
 def sokoban_heuristic(state) -> float:
     """
-    Optimized Sokoban heuristic with reduced computation and smart caching
+    optimized Sokoban heuristic with reduced computation and smart caching
     """
     # Get current state information
     box_positions = list(state.positions_of_boxes.keys())
