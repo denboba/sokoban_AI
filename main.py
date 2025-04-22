@@ -38,7 +38,7 @@ def solve_and_visualize(solver, map_file: str, algorithm_name: str, generate_gif
         output_dir = os.path.join(
             os.path.dirname(map_file),
             'solutions',
-            algorithm_name.replace(' ', '_').lower(),
+            algorithm_name.replace(' ', '-').lower(),
             map_name
         )
         os.makedirs(output_dir, exist_ok=True)
