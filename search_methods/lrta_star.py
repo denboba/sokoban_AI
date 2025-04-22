@@ -103,6 +103,7 @@ class LRTAStar(Solver):
                 visit_penalty = 0.3 * self.visit_counts[next_key] * (1.5 if iterations > self.max_iterations * 0.5 else 1)
                 delta_target = sum(1 for b in next_state.positions_of_boxes if b in next_state.targets) - boxes_on_target
                 priority = base_cost + h_next + visit_penalty - 8 * delta_target if delta_target > 0 else base_cost + h_next + visit_penalty + 10 * abs(delta_target)
+
                 priority -= len(next_state.filter_possible_moves()) * 0.2
                 if move >= BOX_LEFT:
                     moved_box = next((p for p in next_state.positions_of_boxes if p not in current_state.positions_of_boxes), None)
@@ -110,6 +111,7 @@ class LRTAStar(Solver):
                         x, y = moved_box
                         if sum((x + dx, y + dy) in next_state.obstacles for dx, dy in [(0,1),(0,-1),(1,0),(-1,0)]) >= 2 and moved_box not in next_state.targets:
                             priority += 5
+
                 heapq.heappush(move_queue, (priority, move, next_state))
 
             if not move_queue:

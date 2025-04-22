@@ -5,7 +5,7 @@ from typing import List, Tuple, Set
 
 
 def manhattan_distance(pos1: Tuple[int, int], pos2: Tuple[int, int]) -> int:
-    """Manhattan distance between two points"""
+    """manhattan distance between two points"""
     return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
 
 def path_exists(start: Tuple[int, int], end: Tuple[int, int], obstacles: Set[Tuple[int, int]],
@@ -32,7 +32,7 @@ def path_exists(start: Tuple[int, int], end: Tuple[int, int], obstacles: Set[Tup
 
 
 def min_matching_distance(boxes: List[Tuple[int, int]], targets: List[Tuple[int, int]]) -> float:
-    """Minimum cost matching using the Hungarian algorithm for optimal box-target matching"""
+    """minimum cost matching using the Hungarian algorithm for optimal box-target matching"""
     if not boxes or not targets:
         return 0.0
     cost_matrix = np.array([[manhattan_distance(box, target) for target in targets] for box in boxes])
@@ -64,7 +64,7 @@ def deadlock_heuristic(state) -> float:
         up = (box_x + 1, box_y)
         down = (box_x - 1, box_y)
 
-        # Check for second neighbors (2 steps away)
+        # Check for second neighbors
         left2 = (box_x, box_y - 2)
         right2 = (box_x, box_y + 2)
         up2 = (box_x + 2, box_y)
@@ -124,9 +124,9 @@ def sokoban_heuristic(state) -> float:
 
     # Precompute deadlock penalties
     obstacle_set = set(obstacles)
-    target_set = set(targets)
 
-    # Cache for paths between boxes and targets to avoid recalculating
+
+    # to avoid redundant path checks
     path_cache = {}
 
     for i, box_pos in enumerate(box_positions):
@@ -141,30 +141,32 @@ def sokoban_heuristic(state) -> float:
             base_dist = manhattan_distance(box_pos, target)
             cost_matrix[i, j] = base_dist
 
-            # Path check (cache results to avoid redundant calculations)
+            # to avoid redundant path checks
             if (box_pos, target) not in path_cache:
                 path_cache[(box_pos, target)] = path_exists(box_pos, target, obstacle_set, max_depth=80)
 
             if not path_cache[(box_pos, target)]:
-                path_penalties[i, j] += base_dist * 0.5  # Apply penalty if no path exists
+                path_penalties[i, j] += base_dist * 0.5  # penalize if path does not exist
 
-            # Corner penalty if box is in a corner and not on target
+            # Penalize if box is in a corner
             if is_corner and box_pos != target:
                 corner_penalties[i, j] = base_dist * 1.0
 
-    # Apply all penalties to the cost matrix
+    # add penalties to cost matrix
     cost_matrix += path_penalties + corner_penalties
 
-    # Optimal matching using Hungarian algorithm
+    #Hungarian algorithm for optimal box-target matching
     row_ind, col_ind = linear_sum_assignment(cost_matrix)
     total_distance = cost_matrix[row_ind, col_ind].sum() * 1.5
 
-    # Enhanced player positioning cost: Minimize distance to the nearest box
+    #player positioning cost: Minimize distance to the nearest box
     boxes_not_on_target = [box for box in box_positions if box not in targets]
     if boxes_not_on_target:
         nearest_box_dist = min(manhattan_distance(player_pos, box) for box in boxes_not_on_target)
         avg_box_dist = np.mean([manhattan_distance(player_pos, box) for box in boxes_not_on_target])
+        #
         total_distance += nearest_box_dist * 0.8 + avg_box_dist * 0.4
+
 
     # Deadlock analysis
     deadlock_penalty = deadlock_heuristic(state)
@@ -188,3 +190,6 @@ def sokoban_heuristic(state) -> float:
     total_distance += box_moves * 0.3
 
     return total_distance
+
+
+
