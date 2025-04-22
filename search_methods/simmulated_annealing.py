@@ -32,7 +32,7 @@ class SimulatedAnnealing(Solver):
         current_path = []
         best_state = current_state
         best_path = []
-        best_score = sokoban_heuristic(current_state)
+        best_score = sokoban_heuristic(current_state)  # Use sokoban_heuristic here
         temperature = self.initial_temp
         iterations = 0
         last_improvement = 0
@@ -69,7 +69,7 @@ class SimulatedAnnealing(Solver):
             else:
                 move, next_state, state_key, _ = min(move_scores, key=lambda x: x[3])
 
-            next_cost = sokoban_heuristic(next_state)
+            next_cost = sokoban_heuristic(next_state)  # Use sokoban_heuristic here
 
             if next_cost == 0 or next_state.is_solved():
                 return current_path + [move]
