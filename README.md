@@ -91,13 +91,13 @@ int]], targets: List[Tuple[int, int]]) -> float:
 - Returns sum of optimal distances
 
 ###### 2.4 Deadlock Heuristic
-
+``` python
 def deadlock_heuristic(state) -> float:
 penalty = 0
 obstacles = state.obstacles
 box_positions = state.positions_of_boxes
 targets = state.targets
-
+```
 ### ...
 
 **Deadlock Detection Methods:**
@@ -210,7 +210,7 @@ self.h_values.get(key, 0 ))
 ## 3.3 Search Algorithm
 
 ###### 3.3.1 Main Solving Loop
-
+``` python
 def solve(self, initial_state) ->
 Optional[List[int]]:
 current_state = initial_state
@@ -220,7 +220,7 @@ best_h_value = float('inf')
 iterations = 0
 plateau_count = 0
 visited_states: Set[str] = set()
-
+```
 # ...
 
 
@@ -231,7 +231,7 @@ visited_states: Set[str] = set()
 ###### 3.3.2 Adaptive Visit Control
 
 ##### ...
-
+``` python
 adaptive_visits = self.max_visits * ( 2 +
 progress_ratio * 4 + len(current_state.targets) / 3 )
 if progress_ratio > 0.7:
@@ -240,7 +240,7 @@ elif progress_ratio > 0.5:
 adaptive_visits *= 1.
 elif boxes_on_target == 0 :
 adaptive_visits *= 0.
-
+```
 ### ...
 
 - **Dynamic visit limits** based on puzzle progress
@@ -250,7 +250,7 @@ adaptive_visits *= 0.
 ###### 3.3.3 Backtracking Mechanism
 
 ##### ...
-
+``` python
 backtrack_depth = min(max(int(len(path) * 0.2), 5 ),
 25 )
 for _ in range(backtrack_depth):
@@ -259,7 +259,7 @@ old_key = self.get_state_key(current_state)
 visited_states.discard(old_key)
 self.visit_counts[old_key] = 0
 path.pop()
-
+```
 #### ...
 
 - **Proportional backtracking** based on path length
@@ -272,7 +272,7 @@ path.pop()
 ###### 3.4.1 Priority Calculation
 
 #### ...
-
+``` python
 base_cost = 2 if move >= BOX_LEFT else 1
 h_next = self.get_heuristic(next_state)
 visit_penalty = 0.3 * self.visit_counts[next_key] *
@@ -284,7 +284,7 @@ next_state.targets) - boxes_on_target
 priority = base_cost + h_next + visit_penalty - 8 *
 delta_target if delta_target > 0 else base_cost +
 h_next + visit_penalty + 10 * abs(delta_target)
-
+```
 ##### ...
 
 - **Multi-factor evaluation** combining:
@@ -297,7 +297,7 @@ h_next + visit_penalty + 10 * abs(delta_target)
 ###### 3.4.2 Deadlock Awareness
 
 ##### ...
-
+``` python
 if move >= BOX_LEFT:
 moved_box = next((p for p in
 next_state.positions_of_boxes if p not in
@@ -311,7 +311,7 @@ next_state.obstacles for dx, dy in [( 0 , 1 ),( 0 ,-
 1 ),( 1 , 0 ),(- 1 , 0 )]) >= 2 and moved_box not in
 next_state.targets:
 priority += 5
-
+``` 
 #### ...
 
 - **Corner analysis** for potential traps
@@ -322,10 +322,10 @@ priority += 5
 ###### 3.5.1 State Visitation Tracking
 
 #### ...
-
+``` python
 visited_states.add(key)
 self.visit_counts[key] += 1
-
+``` 
 #### ...
 
 - **Duplicate prevention** through visited set
@@ -334,7 +334,7 @@ self.visit_counts[key] += 1
 ###### 3.5.2 Periodic Cleanup
 
 #### ...
-
+``` python
 if iterations % 30 == 0 and len(visited_states) >
 1000 :
 try:
@@ -348,7 +348,7 @@ recent_keys.add(self.get_state_key(temp_state))
 visited_states.intersection_update(recent_keys)
 except ValueError:
 visited_states = {key}
-
+``` 
 #### ...
 
 - **Memory optimization** through periodic pruning
@@ -360,7 +360,7 @@ visited_states = {key}
 #### 3.6 Solution Verification
 
 ### ...
-
+``` python
 def verify_solution(self, initial_state, moves:
 List[int]) -> bool:
 if not moves:
@@ -372,7 +372,7 @@ state.apply_move(move)
 return state.is_solved()
 except ValueError:
 return False
-
+``` 
 #### ...
 
 - **Complete replay** of solution moves
@@ -411,7 +411,7 @@ incorporating a plateau limit to handle local optima.
 #### 4.2 Core Implementation Components
 
 ###### 4.2.1 Parameter Configuration
-
+``` python
 def __init__(self,
 initial_temp: float = 75.0,
 cooling_rate: float = 0.995,
@@ -419,7 +419,7 @@ min_temp: float = 0.5,
 max_iterations: int = 50000 ,
 restart_temp: float = 30.0,
 plateau_limit: int = 50 ):
-
+``` 
 ### ...
 
 - **Initial temperature** : Controls early exploration intensity (75.0)
@@ -431,14 +431,14 @@ plateau_limit: int = 50 ):
 
 
 ###### 4.2.2 State Representation
-
+``` python
 def get_state_key(self, state) -> str:
 box_positions = sorted((b.x, b.y) for b in
 state.boxes.values())
 return
 f"p{state.player.x},{state.player.y}|b{box_positions}
 "
-
+``` 
 - **Canonical representation** using sorted box positions
 - **Player position** included in state key
 - **String format** enables efficient dictionary lookups
@@ -446,7 +446,7 @@ f"p{state.player.x},{state.player.y}|b{box_positions}
 #### 4.3 Search Algorithm
 
 ###### 4.3.1 Main Solving Loop
-
+``` python
 def solve(self, initial_state) ->
 Optional[List[int]]:
 current_state = initial_state
@@ -458,7 +458,7 @@ temperature = self.initial_temp
 iterations = 0
 last_improvement = 0
 visited_states = {}
-
+``` 
 ##### ...
 
 - **Smart preservation** : maintains best solution found
@@ -471,7 +471,7 @@ visited_states = {}
 ###### 4.3.2 Move Selection Strategy
 
 #### ...
-
+``` 
 sampled_moves = random.sample(possible_moves, min( 5 ,
 len(possible_moves)))
 
@@ -486,7 +486,7 @@ continue
 score = (- 10 if move >= 4 else 0 ) + visits * 5
 move_scores.append((move, next_state, state_key,
 score))
-
+```
 #### ...
 
 - **Diverse sampling** considers multiple moves
@@ -499,14 +499,14 @@ score))
 ###### 4.3.3 Temperature-Driven Decision Making
 
 #### ...
-
+``` 
 if random.random() < temperature / self.initial_temp:
 move, next_state, state_key, _ =
 random.choice(move_scores)
 else:
 move, next_state, state_key, _ = min(move_scores,
 key=lambda x: x[ 3 ])
-
+```
 ### ...
 
 
@@ -519,7 +519,7 @@ key=lambda x: x[ 3 ])
 ###### 4.4.1 Acceptance Criteria
 
 ### ...
-
+``` python
 if next_cost == 0 or next_state.is_solved():
 return current_path + [move]
 
@@ -527,7 +527,7 @@ if next_cost < best_score:
 best_state, best_path, best_score = next_state,
 current_path + [move], next_cost
 last_improvement = iterations
-
+``` 
 ### ...
 
 - **Direct termination** on perfect solution
@@ -537,12 +537,12 @@ last_improvement = iterations
 ###### 4.4.2 Probabilistic Acceptance
 
 #### ...
-
+``` 
 def acceptance_probability(self, old_cost: float,
 new_cost: float, temperature: float) -> float:
 return 1.0 if new_cost < old_cost else
 math.exp((old_cost - new_cost) / temperature)
-
+``` 
 #### ...
 
 - **Deterministic acceptance** of improving moves
@@ -557,7 +557,7 @@ math.exp((old_cost - new_cost) / temperature)
 ###### 4.5.1 Adaptive Restart
 
 #### ...
-
+``` 
 if iterations - last_improvement >
 self.plateau_limit:
 if random.random() < 0.5:
@@ -578,7 +578,7 @@ temperature = self.initial_temp
 visited_states.clear()
 last_improvement = iterations
 continue
-
+```
 ### ...
 
 - **Dual-strategy approach** :
@@ -591,11 +591,11 @@ continue
 ###### 4.5.2 Temperature Management
 
 ### ...
-
+```
 temperature *= self.cooling_rate
 if temperature < self.min_temp:
 temperature = self.restart_temp
-
+``` 
 
 #### ...
 
@@ -611,12 +611,12 @@ Restart mechanism prevents freezing
 - **Controlled randomness** for reproducible behavior
 
 #### 4.7 Termination Conditions
-
+```
 - **Solution found** (heuristic = 0 or is_solved() = True)
 - **Iteration limit reached** (max_iterations)
 - **No possible moves** (filter_possible_moves() empty)
 - **Resource exhaustion** (time/memory constraints)
-
+```
 The implementation is an effective handling of Sokoban's complex
 
 search space through careful balance of probabilistic exploration and
@@ -682,10 +682,9 @@ After testing both algorithms on 9 different Sokoban maps of varying
     previously computed values, making it the faster algorithm.
 2. LRTA*'s learning mechanism allows it to improve path selection
 
-```
 over time, while SA's temperature-based acceptance can
 sometimes lead to suboptimal path choices.
-```
+
 3. LRTA*'s learning mechanism and heuristic guidance provide more
     consistent performance, while SA's randomness can lead to varying
     results.
@@ -694,9 +693,9 @@ sometimes lead to suboptimal path choices.
 
 ###### 5. Both algorithms benefit from plateau handling and restarting
 
-```
+
 mechanisms, each implementing these features according to their
-```
+
 ###### specific conditions.
 
 
@@ -732,18 +731,18 @@ convergence speed.
 - Saves solutions
 
 **Test each algorithm with all the test cases**
-
+``` python
 ###### python main.py -a [algorithm]
-
+``` 
 - **Automatically** runs all test cases on the algorithm
 - Displays **text-based results** in terminal
 - Saves solutions
 
 #### Test each algorithm with 1 map at a time
-
+``` python
 python main.py -a [algorithm] - i [map_file]
 
-
+``` 
 ###### Or
 
 - Tests the algorithm with the test
